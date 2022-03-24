@@ -1,0 +1,70 @@
+﻿@page "/fetchdata"
+
+@using TableStorageDemo.Data
+@using Microsoft.WindowsAzure.Storage
+@using Microsoft.WindowsAzure.Storage.Table
+@using System.Collections.Generic;  
+@inject WeatherForecastService ForecastService
+
+<h1>Employee List</h1>
+
+<p>This component demonstrates fetching data from a service.</p>
+
+@if (employees == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var emp in employees)
+            {
+                <tr>
+                    <td>@emp.FirstName</td>
+                    <td>@emp.LastName</td>
+                    <td>@emp.Email</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+
+    private List<Employees> employees { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+
+            //Table
+            CloudTable table = await GetTable.GetTableAsync();
+            //Query
+            TableQuery<Employees> query = new TableQuery<Employees>();
+            TableContinuationToken continuationToken = null;
+            do
+            {
+                TableQuerySegment<Employees> queryResults = await table.ExecuteQuerySegmentedAsync(query, continuationToken);
+                continuationToken = queryResults.ContinuationToken;
+                if (employees == null)
+                    employees = new List<Employees>();
+                employees.AddRange(queryResults.Results);
+            } while (continuationToken != null);
+        }
+        catch (Exception ex)
+        {
+
+            Console.WriteLine(ex.ToString());
+        }
+
+    }
+}
